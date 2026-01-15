@@ -2,7 +2,7 @@ BITS 16
 section .text
 global _start
 extern kernel_main
-;
+
 _start:
     cli
     xor ax, ax
