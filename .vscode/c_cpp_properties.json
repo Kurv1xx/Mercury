@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "name": "i686-elf",
+      "compilerPath": "C:\\Packages\\i686 ELF Tools\\bin\\i686-elf-gcc.exe",
+      "intelliSenseMode": "gcc-x86",
+      "cStandard": "gnu11",
+      "cppStandard": "gnu++17"
+    }
+  ],
+  "version": 4
+}
