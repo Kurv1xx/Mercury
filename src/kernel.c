@@ -1,64 +1,57 @@
-typedef unsigned char  uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int   uint32_t;
+#include <stdint.h>
 
-static inline void outb(uint16_t port, uint8_t value) {
-    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
-}
+/* ---- UEFI basic types ---- */
+typedef void* EFI_HANDLE;
+typedef uint64_t EFI_STATUS;
+typedef uint16_t CHAR16;
 
+typedef struct {
+    EFI_STATUS (*Reset)(void*, int);
+    EFI_STATUS (*OutputString)(void*, CHAR16*);
+    EFI_STATUS (*TestString)(void*, CHAR16*);
+    EFI_STATUS (*QueryMode)(void*, uint64_t, uint64_t*, uint64_t*);
+    EFI_STATUS (*SetMode)(void*, uint64_t);
+    EFI_STATUS (*SetAttribute)(void*, uint64_t);
+    EFI_STATUS (*ClearScreen)(void*);
+} EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
 
-#define VGA_WIDTH   80
-#define VGA_HEIGHT  25
-#define VGA_MEMORY  ((uint16_t*)0xB8000)
+typedef struct {
+    char _pad[64];
+    EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* ConOut;
+} EFI_SYSTEM_TABLE;
 
-enum vga_color {
-    VGA_BLACK = 0,
-    VGA_WHITE = 15,
-};
+/* ---- Colors ---- */
+#define EFI_BLACK      0x00
+#define EFI_RED        0x04
+#define EFI_LIGHTGRAY  0x07
+#define EFI_WHITE      0x0F
+#define EFI_TEXT_ATTR(fg, bg) ((bg << 4) | fg)
 
-static inline uint16_t vga_entry(char c, uint8_t color) {
-    return (uint16_t)c | (uint16_t)color << 8;
-}
+EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
+    (void)ImageHandle;
 
+    EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* out = SystemTable->ConOut;
 
-static uint16_t* const vga_buffer = VGA_MEMORY;
-static uint32_t cursor_pos = 0;
-static uint8_t current_color = VGA_WHITE;
+    // Clear screen
+    out->ClearScreen(out);
 
-void vga_disable_cursor(void) {
-    outb(0x3D4, 0x0A);
-    outb(0x3D5, 0x20);
-}
+    // Set color: white text on red background (Max energy)
+    out->SetAttribute(out, EFI_TEXT_ATTR(EFI_WHITE, EFI_RED));
 
-void vga_clear(void) {
-    cursor_pos = 0;
-    for (uint32_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
-        vga_buffer[i] = vga_entry(' ', current_color);
-    }
-}
+    CHAR16 msg[] = L"  MERCURY OS  \r\n\r\n";
+    out->OutputString(out, msg);
 
-void vga_putc(char c) {
-    if (c == '\n') {
-        cursor_pos += VGA_WIDTH - (cursor_pos % VGA_WIDTH);
-        return;
-    }
-    vga_buffer[cursor_pos++] = vga_entry(c, current_color);
-}
+    // Switch to light gray on black
+    out->SetAttribute(out, EFI_TEXT_ATTR(EFI_LIGHTGRAY, EFI_BLACK));
 
-void vga_print(const char* str) {
-    for (uint32_t i = 0; str[i]; i++) {
-        vga_putc(str[i]);
-    }
-}
-
-void kernel_main(void) {
-    vga_disable_cursor();
-    vga_clear();
-
-    vga_print("Mercury v1.0 Online\n");
-    vga_print("Status: GREEN, All Systems Operational.\n");
+    CHAR16 msg2[] = L"UEFI boot successful.\r\n"
+                    L"x86-64 | No GRUB | No BIOS\r\n"
+                    L"Engine running. Waiting...\r\n";
+    out->OutputString(out, msg2);
 
     for (;;) {
-        __asm__ volatile ("hlt");
+        __asm__ __volatile__("hlt");
     }
+
+    return 0;
 }
