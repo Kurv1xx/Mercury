@@ -1,11 +1,8 @@
 @echo off
-echo Cleaning build directory...
 
 if exist build (
     rmdir /s /q build
-    echo Build cleaned.
+    echo INFO: Cleaned build directory
 ) else (
-    echo Nothing to clean.
+    echo INFO: Nothing to clean
 )
-
-pause

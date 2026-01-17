@@ -1,9 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo ===============================
-echo Building MERCURY (UEFI x86_64)
-echo ===============================
+echo INFO: Building MercuryOS 
 
 REM ---- Directories ----
 set BUILD=build
@@ -29,7 +27,7 @@ if not exist %BUILD% mkdir %BUILD%
 if not exist %EFI_DIR% mkdir %EFI_DIR%
 
 REM ---- Compile ----
-echo [1/2] Compiling...
+echo INFO: [1/2] Compiling sources
 
 gcc -c %KERNEL_SRC% ^
   -ffreestanding ^
@@ -68,7 +66,7 @@ gcc -c %KEYBOARD_SRC% ^
 if errorlevel 1 goto fail
 
 REM ---- Link ----
-echo [2/2] Linking UEFI executable...
+echo INFO: [2/2] Linking UEFI executable
 
 ld ^
   %KERNEL_OBJ% ^
@@ -81,20 +79,17 @@ ld ^
 
 if errorlevel 1 goto fail
 
-echo ===============================
-echo Build SUCCESS
-echo Output: %EFI_BIN%
-echo ===============================
+echo INFO: Build successful!
 
 REM ---- Run in QEMU (UEFI) ----
+echo INFO: Launching MercuryOS in QEMU...
 qemu-system-x86_64 ^
   -bios %OVMF% ^
   -drive file=fat:rw:%ISO%,format=raw
 
-pause
 exit /b 0
 
 :fail
-echo BUILD FAILED
+echo ERROR: Build failed!
 pause
 exit /b 1
