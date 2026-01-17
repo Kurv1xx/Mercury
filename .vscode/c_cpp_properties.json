@@ -1,12 +1,20 @@
 {
+  "version": 4,
   "configurations": [
     {
-      "name": "i686-elf",
-      "compilerPath": "C:\\Packages\\i686 ELF Tools\\bin\\i686-elf-gcc.exe",
-      "intelliSenseMode": "gcc-x86",
-      "cStandard": "gnu11",
-      "cppStandard": "gnu++17"
+      "name": "UEFI-x64",
+      "compilerPath": "C:/Packages/MinGW/bin/gcc.exe",
+      "intelliSenseMode": "windows-gcc-x64",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "defines": [
+        "__EFI__"
+      ],
+      "includePath": [
+        "${workspaceFolder}/utils",
+        "${workspaceFolder}/src",
+        "C:/Packages/MinGW/x86_64-w64-mingw32/include"
+      ]
     }
-  ],
-  "version": 4
+  ]
 }

@@ -1,45 +1,95 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 echo ===============================
 echo Building MERCURY (UEFI x86_64)
 echo ===============================
 
-set SRC=src\kernel.c
-set OBJ=kernel.o
-set EFI_DIR=iso\EFI\BOOT
-set EFI=%EFI_DIR%\BOOTX64.EFI
+REM ---- Directories ----
+set BUILD=build
+set ISO=%BUILD%\iso
+set EFI_DIR=%ISO%\EFI\BOOT
 
+REM ---- Sources ----
+set KERNEL_SRC=src\kernel.c
+set CONSOLE_SRC=utils\console.c
+set KEYBOARD_SRC=utils\keyboard.c
+
+REM ---- Objects (ALL in build/) ----
+set KERNEL_OBJ=%BUILD%\kernel.o
+set CONSOLE_OBJ=%BUILD%\console.o
+set KEYBOARD_OBJ=%BUILD%\keyboard.o
+
+REM ---- Output ----
+set EFI_BIN=%EFI_DIR%\BOOTX64.EFI
+set OVMF=utils\OVMF.fd
+
+REM ---- Create directories ----
+if not exist %BUILD% mkdir %BUILD%
 if not exist %EFI_DIR% mkdir %EFI_DIR%
 
+REM ---- Compile ----
 echo [1/2] Compiling...
-gcc -c %SRC% ^
+
+gcc -c %KERNEL_SRC% ^
   -ffreestanding ^
   -fno-stack-protector ^
-  -fno-exceptions ^
   -fno-asynchronous-unwind-tables ^
   -mno-red-zone ^
   -O2 ^
   -Wall -Wextra ^
-  -o %OBJ%
+  -Iutils ^
+  -o %KERNEL_OBJ%
 
 if errorlevel 1 goto fail
 
+gcc -c %CONSOLE_SRC% ^
+  -ffreestanding ^
+  -fno-stack-protector ^
+  -fno-asynchronous-unwind-tables ^
+  -mno-red-zone ^
+  -O2 ^
+  -Wall -Wextra ^
+  -Iutils ^
+  -o %CONSOLE_OBJ%
+
+if errorlevel 1 goto fail
+
+gcc -c %KEYBOARD_SRC% ^
+  -ffreestanding ^
+  -fno-stack-protector ^
+  -fno-asynchronous-unwind-tables ^
+  -mno-red-zone ^
+  -O2 ^
+  -Wall -Wextra ^
+  -Iutils ^
+  -o %KEYBOARD_OBJ%
+
+if errorlevel 1 goto fail
+
+REM ---- Link ----
 echo [2/2] Linking UEFI executable...
-ld %OBJ% ^
+
+ld ^
+  %KERNEL_OBJ% ^
+  %CONSOLE_OBJ% ^
+  %KEYBOARD_OBJ% ^
   -nostdlib ^
   --subsystem=10 ^
   --entry=efi_main ^
-  -o %EFI%
+  -o %EFI_BIN%
 
 if errorlevel 1 goto fail
 
 echo ===============================
 echo Build SUCCESS
-echo Output: %EFI%
+echo Output: %EFI_BIN%
 echo ===============================
 
-qemu-system-x86_64 -bios D:\Projects\Mercury\utils\OVMF.fd -drive file=fat:rw:iso,format=raw
+REM ---- Run in QEMU (UEFI) ----
+qemu-system-x86_64 ^
+  -bios %OVMF% ^
+  -drive file=fat:rw:%ISO%,format=raw
 
 pause
 exit /b 0
